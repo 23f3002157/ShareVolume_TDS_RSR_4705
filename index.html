@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Church & Dwight - Stock Information</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script>
+        async function fetchData(cik) {
+            const response = await fetch(`https://data.sec.gov/api/xbrl/companyconcept/CIK${cik}/dei/EntityCommonStockSharesOutstanding.json`, {
+                headers: {
+                    'User-Agent': 'Your Name (your.email@example.com)'
+                }
+            });
+            const data = await response.json();
+            const entityName = data.entityName;
+            const shares = data.units.shares.filter(item => item.fy > '2020' && typeof item.val === 'number');
+
+            if (shares.length) {
+                const max = shares.reduce((prev, current) => (prev.val > current.val) ? prev : current);
+                const min = shares.reduce((prev, current) => (prev.val < current.val) ? prev : current);
+                const result = {
+                    entityName: entityName,
+                    max: { val: max.val, fy: max.fy },
+                    min: { val: min.val, fy: min.fy }
+                };
+                document.title = entityName;
+                document.getElementById('share-entity-name').innerText = entityName;
+                document.getElementById('share-max-value').innerText = max.val;
+                document.getElementById('share-max-fy').innerText = max.fy;
+                document.getElementById('share-min-value').innerText = min.val;
+                document.getElementById('share-min-fy').innerText = min.fy;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const cik = urlParams.get('CIK') || '0000313927';
+            fetchData(cik);
+        });
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1 id="share-entity-name"></h1>
+        <h2>Stock Information</h2>
+        <div>
+            <p><strong>Max Shares Outstanding:</strong> <span id="share-max-value"></span> in <span id="share-max-fy"></span></p>
+            <p><strong>Min Shares Outstanding:</strong> <span id="share-min-value"></span> in <span id="share-min-fy"></span></p>
+        </div>
+    </div>
+</body>
+</html>
